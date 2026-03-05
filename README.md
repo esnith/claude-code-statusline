@@ -1,72 +1,42 @@
-# Claude Code Status Line
+# claude-code-statusline
 
-A compact, single-line status bar for [Claude Code](https://claude.ai/code) showing model info, git branch, token usage, session cost, thinking mode, and rate limits — all in one line that adapts to your terminal width.
+A single-line status bar for [Claude Code](https://claude.ai/code) that actually tells you what's going on.
 
-Built on top of [daniel3303/ClaudeCodeStatusLine](https://github.com/daniel3303/ClaudeCodeStatusLine) with significant enhancements.
-
----
-
-## What it looks like
-
-**Full screen (≥150 cols)**
-```
-Sonnet 4.6 │ my-project │ ⎇ feature/auth ✔ ↑2 │ ████░░░░ 45k/200k 22% │ ◇ thinking │ $1.24 │ 5h ██░░░░ 28% ↺ 2:30pm │ 7d ████░░ 61% ↺ jun 8
-```
-
-**Wide (100–149 cols)**
-```
-Sonnet 4.6 │ ⎇ feature/auth ✔ ↑2 │ ████░░░░ 45k/200k 22% │ ◇ thinking │ $1.24 │ 5h ██░░░░ 28% ↺ 2:30pm
-```
-
-**Split screen (76–99 cols)**
-```
-Sonnet 4.6 │ ⎇ feature/auth ✔ ↑2 │ ███░░ 45k/200k 22% │ ◇ │ 5h ██░░ 28%
-```
-
-**Narrow (<76 cols)**
-```
-Sonnet │ ⎇ feature/auth ✔ │ ███░ 45k/200k 22%
-```
+![Preview](preview.svg)
 
 ---
 
-## Features
+## What it shows
 
-- **Git branch** — current branch with dirty (`✗`) / clean (`✔`) indicator
-- **Ahead / behind** — `↑2 ↓1` relative to upstream (only shown when non-zero)
-- **Token bar** — color-coded progress bar (green → orange → yellow → red)
-- **Session cost** — running `$X.XX` for the current Claude Code session
-- **Thinking mode** — `◆ thinking` when extended thinking is on, `◇` when off
-- **Rate limits** — 5-hour and 7-day usage bars with reset times (requires Pro/Max)
-- **Extra credits** — optional extra usage tracking
-- **Adaptive layout** — 4 width tiers; never wraps regardless of terminal size
-- **Model color** — Opus in amber, Sonnet in blue, Haiku in cyan
-- **Git caching** — git status cached per-directory to avoid lag on large repos
+```
+Sonnet 4.6  │  ⎇ feature/auth ✔ ↑2  │  ████░░░░ 45k/200k 22%  │  ◇ thinking  │  $1.24  │  5h ██░░░░ 28% ↺ 2:30pm
+```
 
----
-
-## Requirements
-
-- **bash** 4+ (macOS ships bash 3.2; install via `brew install bash` if needed)
-- **jq** — `brew install jq`
-- **curl** — pre-installed on macOS/Linux
-- Claude Code with **Pro or Max** subscription (for rate limit data)
+| Section | What it means |
+|---------|--------------|
+| `Sonnet 4.6` | Current model — amber for Opus, blue for Sonnet, cyan for Haiku |
+| `⎇ feature/auth` | Git branch in the current working directory |
+| `✔` / `✗` | Clean or dirty working tree |
+| `↑2 ↓1` | Commits ahead / behind upstream (hidden when zero) |
+| `████░░░░ 45k/200k 22%` | Context window usage bar |
+| `◇ thinking` | Extended thinking mode status |
+| `$1.24` | Running session cost |
+| `5h ██░░ 28% ↺ 2:30pm` | 5-hour rate limit bar with reset time |
+| `7d ████░░ 61% ↺ jun 8` | 7-day rate limit bar with reset date |
 
 ---
 
-## Installation
-
-**1. Copy the script**
+## Install
 
 ```bash
+# 1. Download
 curl -o ~/.claude/statusline.sh \
   https://raw.githubusercontent.com/isaacaudet/claude-code-statusline/main/statusline.sh
 chmod +x ~/.claude/statusline.sh
 ```
 
-**2. Add to `~/.claude/settings.json`**
-
-```json
+```jsonc
+// 2. Add to ~/.claude/settings.json
 {
   "statusLine": {
     "type": "command",
@@ -75,55 +45,63 @@ chmod +x ~/.claude/statusline.sh
 }
 ```
 
-**3. Restart Claude Code**
+Restart Claude Code. That's it.
 
 ---
 
 ## Terminal width
 
-The script auto-detects your terminal width via `stty size`. If detection fails (some environments), it defaults to **80 cols** (compact, never wraps).
+The script detects your terminal width automatically via `stty`. It adapts what it shows based on available space — wider terminals get more sections, narrower terminals stay compact and never wrap.
 
-To override, pass `TERM_WIDTH` in your settings:
+| Width | What's shown |
+|-------|-------------|
+| ≥ 150 | Everything: cwd, branch, ↑↓, tokens, thinking, cost, 5h + 7d bars |
+| 100–149 | Branch, ↑↓, tokens, thinking, cost, 5h bar with reset time |
+| 76–99 | Branch, ↑↓, tokens, thinking symbol, 5h bar |
+| < 76 | Short model name, branch, tokens |
 
-```json
+If auto-detection doesn't work in your terminal, pass `TERM_WIDTH` directly:
+
+```jsonc
 {
   "statusLine": {
     "type": "command",
-    "command": "TERM_WIDTH=150 ~/.claude/statusline.sh"
+    "command": "TERM_WIDTH=130 ~/.claude/statusline.sh"
   }
 }
 ```
-
-| Width | Tier | What's shown |
-|-------|------|-------------|
-| ≥150 | full | CWD, branch, ↑↓, token bar, thinking label, cost, 5h+7d bars with reset times |
-| 100–149 | wide | branch, ↑↓, token bar, thinking label, cost, 5h bar with reset time |
-| 76–99 | split | branch, ↑↓, token bar, thinking symbol, 5h bar |
-| <76 | narrow | short model name, branch, token bar |
 
 ---
 
 ## Configuration
 
-Flags at the top of the script:
+Edit the flags at the top of `statusline.sh`:
 
 ```bash
-SHOW_GIT=true           # git branch, dirty status, ahead/behind
-SHOW_TOKENS=true        # token usage bar
+SHOW_GIT=true           # branch, dirty, ahead/behind
+SHOW_TOKENS=true        # context window bar
 SHOW_THINKING=true      # extended thinking indicator
-SHOW_RATE_LIMITS=true   # 5h / 7d rate limit bars
-BRANCH_MAX_LEN=28       # max branch name length before truncating
-GIT_CACHE_SECS=10       # seconds to cache git status
-TOKEN_BAR_WIDTH=8       # width of token progress bar (full tier)
+SHOW_RATE_LIMITS=true   # 5h / 7d usage bars
+BRANCH_MAX_LEN=28       # truncate branch names beyond this
+GIT_CACHE_SECS=10       # how long to cache git status per repo
+TOKEN_BAR_WIDTH=8       # bar width in full-screen mode
 ```
 
 ---
 
-## How rate limits work
+## Rate limits
 
-Rate limit data is fetched from the Anthropic API using your Claude Code OAuth token (read automatically from Keychain on macOS, or `~/.claude/.credentials.json` on Linux). Responses are cached for 60 seconds to avoid hammering the API.
+Rate limit data (5h / 7d bars) is fetched from the Anthropic API using your Claude Code OAuth token, which is read automatically from the macOS Keychain or `~/.claude/.credentials.json` on Linux. Results are cached for **5 minutes** to minimize requests.
 
-Requires a Pro or Max Claude subscription.
+Requires a Pro or Max subscription. Set `SHOW_RATE_LIMITS=false` to disable.
+
+---
+
+## Requirements
+
+- `jq` — `brew install jq`
+- `curl` — already on macOS/Linux
+- Claude Code Pro or Max (for rate limit data)
 
 ---
 
@@ -131,10 +109,6 @@ Requires a Pro or Max Claude subscription.
 
 Based on [daniel3303/ClaudeCodeStatusLine](https://github.com/daniel3303/ClaudeCodeStatusLine).
 
-Enhancements: git branch/dirty/ahead-behind, token progress bar, session cost, adaptive width tiers, per-directory git caching, model color by family, block-style progress bars.
+Added: git branch/dirty/ahead-behind, token bar, session cost, adaptive width tiers, git caching, model color, block-style bars.
 
----
-
-## License
-
-MIT
+MIT License

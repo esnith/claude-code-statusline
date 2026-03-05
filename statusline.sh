@@ -350,7 +350,7 @@ fi
 # shown in full/wide/split; hidden only in narrow
 if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
     api_cache="/tmp/claude/statusline-usage-cache.json"
-    api_cache_max=60
+    api_cache_max=300  # 5 minutes
     needs_refresh=true
     usage_data=""
 
