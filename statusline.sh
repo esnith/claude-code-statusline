@@ -350,7 +350,7 @@ fi
 # shown in full/wide/split; hidden only in narrow
 if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
     api_cache="/tmp/claude/statusline-usage-cache.json"
-    api_cache_max=300  # 5 minutes
+    api_cache_max=3600  # 1 hour — rate limit data changes slowly
     needs_refresh=true
     usage_data=""
 
@@ -359,8 +359,12 @@ if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
         now=$(date +%s)
         cache_age=$(( now - cache_mtime ))
         if [ "$cache_age" -lt "$api_cache_max" ]; then
-            needs_refresh=false
-            usage_data=$(cat "$api_cache" 2>/dev/null)
+            cached_content=$(cat "$api_cache" 2>/dev/null)
+            # Only use cache if it's valid data (not an error response)
+            if [ -n "$cached_content" ] && ! echo "$cached_content" | jq -e '.error' >/dev/null 2>&1; then
+                needs_refresh=false
+                usage_data="$cached_content"
+            fi
         fi
     fi
 
@@ -375,11 +379,18 @@ if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
                 -H "User-Agent: claude-code/2.1.34" \
                 "https://api.anthropic.com/api/oauth/usage" 2>/dev/null)
             if [ -n "$response" ] && echo "$response" | jq . >/dev/null 2>&1; then
-                usage_data="$response"
-                echo "$response" > "$api_cache"
+                # Only cache successful (non-error) responses
+                if ! echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+                    usage_data="$response"
+                    echo "$response" > "$api_cache"
+                fi
             fi
         fi
-        [ -z "$usage_data" ] && [ -f "$api_cache" ] && usage_data=$(cat "$api_cache" 2>/dev/null)
+        # Fall back to stale cache if refresh failed — skip if it's an error response
+        if [ -z "$usage_data" ] && [ -f "$api_cache" ]; then
+            stale=$(cat "$api_cache" 2>/dev/null)
+            ! echo "$stale" | jq -e '.error' >/dev/null 2>&1 && usage_data="$stale"
+        fi
     fi
 
     if [ -n "$usage_data" ] && echo "$usage_data" | jq -e . >/dev/null 2>&1; then

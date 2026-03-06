@@ -91,7 +91,7 @@ TOKEN_BAR_WIDTH=8       # bar width in full-screen mode
 
 ## Rate limits
 
-Rate limit data (5h / 7d bars) is fetched from the Anthropic API using your Claude Code OAuth token, which is read automatically from the macOS Keychain or `~/.claude/.credentials.json` on Linux. Results are cached for **5 minutes** to minimize requests.
+Rate limit data (5h / 7d bars) is fetched from the Anthropic API using your Claude Code OAuth token, which is read automatically from the macOS Keychain or `~/.claude/.credentials.json` on Linux. Results are cached for **1 hour** to minimize requests. If the API returns an error (e.g. rate limited), the cache is not overwritten — stale good data is shown instead.
 
 Requires a Pro or Max subscription. Set `SHOW_RATE_LIMITS=false` to disable.
 
