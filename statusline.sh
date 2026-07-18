@@ -2,15 +2,21 @@
 # Claude Code Status Line
 # Based on https://github.com/daniel3303/ClaudeCodeStatusLine
 # Enhanced: git branch/ahead-behind, token bar, caching, improved visuals
+# Two-line layout (esnith fork): line 1 = model/tokens/effort/thinking/cost/rate-limits,
+#                                line 2 = cwd/git/transcript
 
 set -f  # disable globbing
 
 # ===== Config =====
 SHOW_GIT=true           # git branch, dirty status, ahead/behind
 SHOW_TOKENS=true        # token usage bar
+SHOW_EFFORT=true        # reasoning-effort indicator (from .effort.level)
 SHOW_THINKING=true      # extended thinking indicator
 SHOW_RATE_LIMITS=true   # 5h / 7d rate limit bars
+SHOW_CWD=true           # current directory (line 2)
+SHOW_TRANSCRIPT=true    # transcript filename (line 2, full/wide only)
 BRANCH_MAX_LEN=28       # truncate branch names longer than this
+TRANSCRIPT_MAX_LEN=24   # truncate transcript filename longer than this
 GIT_CACHE_SECS=10       # seconds to cache git status (git diff is slow on large repos)
 TOKEN_BAR_WIDTH=8       # width of token progress bar
 
@@ -69,6 +75,16 @@ truncate_str() {
     [ "${#str}" -gt "$max" ] \
         && printf "%s…" "${str:0:$((max-1))}" \
         || printf "%s" "$str"
+}
+
+# Append a segment to line 2, inserting the separator only between segments
+# (line 2 segments are optional, so we can't hardcode a leading separator).
+append_line2() {
+    if [ -n "$line2" ]; then
+        line2="${line2}${sep}$1"
+    else
+        line2="$1"
+    fi
 }
 
 # Colored progress bar using block chars
@@ -219,8 +235,10 @@ format_reset_time() {
 
 # ===== Extract JSON =====
 model_name=$(echo "$input" | jq -r '.model.display_name // "Claude"')
-cwd=$(echo "$input"        | jq -r '.cwd // empty')
+cwd=$(echo "$input"        | jq -r '.cwd // .workspace.current_dir // empty')
 cost_usd=$(echo "$input"   | jq -r '.cost.total_cost_usd // empty')
+transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
+effort_level=$(echo "$input"    | jq -r '.effort.level // empty')
 
 size=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 [ "$size" -eq 0 ] 2>/dev/null && size=200000
@@ -245,10 +263,10 @@ fi
 #
 # Tiers (tuned so each tier's max output fits within its min width):
 #
-#  full    (≥150): CWD, ahead/behind, "◆ thinking", 5h+7d+reset, cost
-#  wide    (100–149): ahead/behind, "◆ thinking", 5h+reset, cost
-#  split   (70–99):  ahead/behind, "◆" symbol, 5h bar, cost
-#  narrow  (<70):  short model + branch + token only
+#  full    (≥150): line1 tokens/effort/thinking/cost/5h+7d+reset; line2 cwd/git/transcript
+#  wide    (100–149): line1 tokens/effort/thinking/cost/5h+reset; line2 cwd/git/transcript
+#  split   (70–99):  line1 tokens/effort-icon/thinking-symbol/5h bar; line2 git
+#  narrow  (<70):  line1 short-model/tokens/effort-icon; line2 git
 #
 if   [ "$TERM_WIDTH" -ge 150 ] 2>/dev/null; then width_tier="full"
 elif [ "$TERM_WIDTH" -ge 100 ] 2>/dev/null; then width_tier="wide"
@@ -267,7 +285,12 @@ short_model() {
 }
 
 # ===== Build output =====
-out=""
+# line1 = model, tokens, effort, thinking, cost, rate limits
+# line2 = cwd, git, transcript
+line1=""
+line2=""
+
+# --- Line 1 ---
 
 # Model — color by family
 model_color="$blue"
@@ -278,42 +301,7 @@ esac
 
 display_model="$model_name"
 [ "$width_tier" = "narrow" ] && display_model=$(short_model "$model_name")
-out+="${model_color}${display_model}${reset}"
-
-# CWD — full tier only (branch name gives enough context below that)
-if [ "$width_tier" = "full" ] && [ -n "$cwd" ]; then
-    display_dir="${cwd##*/}"
-    out+="${sep}${dim}${display_dir}${reset}"
-fi
-
-# Git branch + dirty + ahead/behind
-if $SHOW_GIT && [ -n "$cwd" ]; then
-    git_info=$(get_git_info "$cwd")
-    if [ -n "$git_info" ]; then
-        IFS=$'\t' read -r g_branch g_dirty g_ahead g_behind <<< "$git_info"
-
-        # Progressively tighten branch truncation
-        local_max="$BRANCH_MAX_LEN"
-        [ "$width_tier" = "wide"   ] && local_max=24
-        [ "$width_tier" = "split"  ] && local_max=18
-        [ "$width_tier" = "narrow" ] && local_max=12
-        g_branch_display=$(truncate_str "$g_branch" "$local_max")
-
-        out+="${sep}${dim}⎇${reset} ${magenta}${g_branch_display}${reset}"
-
-        if [ "$g_dirty" = "dirty" ]; then
-            out+=" ${red}✗${reset}"
-        else
-            out+=" ${green}✔${reset}"
-        fi
-
-        # Ahead/behind: shown in all tiers except narrow (only if non-zero)
-        if [ "$width_tier" != "narrow" ]; then
-            [ "${g_ahead:-0}"  -gt 0 ] && out+=" ${green}↑${g_ahead}${reset}"
-            [ "${g_behind:-0}" -gt 0 ] && out+=" ${orange}↓${g_behind}${reset}"
-        fi
-    fi
-fi
+line1+="${model_color}${display_model}${reset}"
 
 # Token bar
 if $SHOW_TOKENS; then
@@ -322,7 +310,27 @@ if $SHOW_TOKENS; then
     [ "$width_tier" = "split"  ] && bar_w=5
     [ "$width_tier" = "narrow" ] && bar_w=4
     token_bar=$(build_bar "$pct_used" "$bar_w")
-    out+="${sep}${token_bar} ${orange}${used_tokens}${dim}/${reset}${white}${total_tokens}${reset} ${dim}${pct_used}%${reset}"
+    line1+="${sep}${token_bar} ${orange}${used_tokens}${dim}/${reset}${white}${total_tokens}${reset} ${dim}${pct_used}%${reset}"
+fi
+
+# Effort — placed before thinking.
+#   full/wide    → "◕ high"  (fill-graded icon + level word)
+#   split/narrow → "◕"       (icon only — the fill conveys the level)
+# The .effort.level field is absent when the model doesn't support effort, so skip it then.
+if $SHOW_EFFORT && [ -n "$effort_level" ]; then
+    case "$effort_level" in
+        low)    e_icon="◔"; e_color="$green"   ;;
+        medium) e_icon="◑"; e_color="$cyan"    ;;
+        high)   e_icon="◕"; e_color="$blue"    ;;
+        xhigh)  e_icon="●"; e_color="$magenta" ;;
+        max)    e_icon="●"; e_color="$amber"   ;;
+        *)      e_icon="○"; e_color="$dim"     ;;
+    esac
+    if [ "$width_tier" = "full" ] || [ "$width_tier" = "wide" ]; then
+        line1+="${sep}${e_color}${e_icon} ${effort_level}${reset}"
+    else
+        line1+="${sep}${e_color}${e_icon}${reset}"
+    fi
 fi
 
 # Thinking:
@@ -330,20 +338,20 @@ fi
 #   split      → "◆" / "◇"                    (symbol only, saves ~9 chars)
 #   narrow     → hidden
 if $SHOW_THINKING && [ "$width_tier" != "narrow" ]; then
-    out+="${sep}"
+    line1+="${sep}"
     if $thinking_on; then
-        if [ "$width_tier" = "split" ]; then out+="${amber}◆${reset}"
-        else out+="${amber}◆ thinking${reset}"; fi
+        if [ "$width_tier" = "split" ]; then line1+="${amber}◆${reset}"
+        else line1+="${amber}◆ thinking${reset}"; fi
     else
-        if [ "$width_tier" = "split" ]; then out+="${dim}◇${reset}"
-        else out+="${dim}◇ thinking${reset}"; fi
+        if [ "$width_tier" = "split" ]; then line1+="${dim}◇${reset}"
+        else line1+="${dim}◇ thinking${reset}"; fi
     fi
 fi
 
 # Session cost — wide/full only
 if [ -n "$cost_usd" ] && [ "$width_tier" = "wide" -o "$width_tier" = "full" ]; then
     cost_fmt=$(printf '%.2f' "$cost_usd" 2>/dev/null)
-    [ -n "$cost_fmt" ] && out+="${sep}${dim}\$${cost_fmt}${reset}"
+    [ -n "$cost_fmt" ] && line1+="${sep}${dim}\$${cost_fmt}${reset}"
 fi
 
 # ===== Rate limits (API, cached 60s) =====
@@ -400,11 +408,11 @@ if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
         five_hour_pct=$(echo "$usage_data"       | jq -r '.five_hour.utilization // 0' | awk '{printf "%.0f", $1}')
         five_hour_reset_iso=$(echo "$usage_data" | jq -r '.five_hour.resets_at // empty')
         five_hour_bar=$(build_bar "$five_hour_pct" "$bar_width")
-        out+="${sep}${dim}5h${reset} ${five_hour_bar} ${cyan}${five_hour_pct}%${reset}"
+        line1+="${sep}${dim}5h${reset} ${five_hour_bar} ${cyan}${five_hour_pct}%${reset}"
         # Reset time: full and wide only (not split — saves ~12 chars)
         if [ "$width_tier" = "full" ] || [ "$width_tier" = "wide" ]; then
             five_hour_reset=$(format_reset_time "$five_hour_reset_iso" "time")
-            [ -n "$five_hour_reset" ] && out+=" ${dim}↺ ${five_hour_reset}${reset}"
+            [ -n "$five_hour_reset" ] && line1+=" ${dim}↺ ${five_hour_reset}${reset}"
         fi
 
         # 7d bar + reset: full only
@@ -413,8 +421,8 @@ if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
             seven_day_reset_iso=$(echo "$usage_data" | jq -r '.seven_day.resets_at // empty')
             seven_day_reset=$(format_reset_time "$seven_day_reset_iso" "datetime")
             seven_day_bar=$(build_bar "$seven_day_pct" "$bar_width")
-            out+="${sep}${dim}7d${reset} ${seven_day_bar} ${cyan}${seven_day_pct}%${reset}"
-            [ -n "$seven_day_reset" ] && out+=" ${dim}↺ ${seven_day_reset}${reset}"
+            line1+="${sep}${dim}7d${reset} ${seven_day_bar} ${cyan}${seven_day_pct}%${reset}"
+            [ -n "$seven_day_reset" ] && line1+=" ${dim}↺ ${seven_day_reset}${reset}"
 
             extra_enabled=$(echo "$usage_data" | jq -r '.extra_usage.is_enabled // false')
             if [ "$extra_enabled" = "true" ]; then
@@ -422,11 +430,62 @@ if $SHOW_RATE_LIMITS && [ "$width_tier" != "narrow" ]; then
                 extra_used=$(echo "$usage_data"  | jq -r '.extra_usage.used_credits // 0'  | awk '{printf "%.2f", $1/100}')
                 extra_limit=$(echo "$usage_data" | jq -r '.extra_usage.monthly_limit // 0' | awk '{printf "%.2f", $1/100}')
                 extra_bar=$(build_bar "$extra_pct" "$bar_width")
-                out+="${sep}${dim}extra${reset} ${extra_bar} ${cyan}\$${extra_used}${dim}/\$${extra_limit}${reset}"
+                line1+="${sep}${dim}extra${reset} ${extra_bar} ${cyan}\$${extra_used}${dim}/\$${extra_limit}${reset}"
             fi
         fi
     fi
 fi
 
-printf "%b" "$out"
+# --- Line 2 ---
+
+# CWD — full/wide (its own line now, so room to show alongside git/transcript)
+if $SHOW_CWD && { [ "$width_tier" = "full" ] || [ "$width_tier" = "wide" ]; } && [ -n "$cwd" ]; then
+    display_dir="${cwd##*/}"
+    append_line2 "${dim}${display_dir}${reset}"
+fi
+
+# Git branch + dirty + ahead/behind
+if $SHOW_GIT && [ -n "$cwd" ]; then
+    git_info=$(get_git_info "$cwd")
+    if [ -n "$git_info" ]; then
+        IFS=$'\t' read -r g_branch g_dirty g_ahead g_behind <<< "$git_info"
+
+        # Progressively tighten branch truncation
+        local_max="$BRANCH_MAX_LEN"
+        [ "$width_tier" = "wide"   ] && local_max=24
+        [ "$width_tier" = "split"  ] && local_max=18
+        [ "$width_tier" = "narrow" ] && local_max=12
+        g_branch_display=$(truncate_str "$g_branch" "$local_max")
+
+        git_seg="${dim}⎇${reset} ${magenta}${g_branch_display}${reset}"
+
+        if [ "$g_dirty" = "dirty" ]; then
+            git_seg+=" ${red}✗${reset}"
+        else
+            git_seg+=" ${green}✔${reset}"
+        fi
+
+        # Ahead/behind: shown in all tiers except narrow (only if non-zero)
+        if [ "$width_tier" != "narrow" ]; then
+            [ "${g_ahead:-0}"  -gt 0 ] && git_seg+=" ${green}↑${g_ahead}${reset}"
+            [ "${g_behind:-0}" -gt 0 ] && git_seg+=" ${orange}↓${g_behind}${reset}"
+        fi
+
+        append_line2 "$git_seg"
+    fi
+fi
+
+# Transcript filename — full/wide only
+if $SHOW_TRANSCRIPT && { [ "$width_tier" = "full" ] || [ "$width_tier" = "wide" ]; } && [ -n "$transcript_path" ]; then
+    t_base="${transcript_path##*/}"
+    t_disp=$(truncate_str "$t_base" "$TRANSCRIPT_MAX_LEN")
+    append_line2 "${dim}≡ ${t_disp}${reset}"
+fi
+
+# ===== Print (two lines; second line only if it has content) =====
+if [ -n "$line2" ]; then
+    printf "%b\n%b" "$line1" "$line2"
+else
+    printf "%b" "$line1"
+fi
 exit 0
