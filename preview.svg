@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="172" viewBox="0 0 900 172">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="282" viewBox="0 0 900 282">
 
   <!-- Terminal background -->
-  <rect width="900" height="172" fill="#1a1b26" rx="10"/>
+  <rect width="900" height="282" fill="#1a1b26" rx="10"/>
 
   <!-- Title bar -->
   <rect width="900" height="36" fill="#24253a" rx="10"/>
@@ -15,24 +15,35 @@
   <!-- Title -->
   <text x="450" y="23" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#4a5168">statusline.sh — Claude Code</text>
 
-  <!-- Row dividers -->
-  <line x1="0" y1="80" x2="900" y2="80" stroke="#252837" stroke-width="1"/>
-  <line x1="0" y1="126" x2="900" y2="126" stroke="#252837" stroke-width="1"/>
+  <!-- Group dividers -->
+  <line x1="0" y1="104" x2="900" y2="104" stroke="#252837" stroke-width="1"/>
+  <line x1="0" y1="162" x2="900" y2="162" stroke="#252837" stroke-width="1"/>
+  <line x1="0" y1="220" x2="900" y2="220" stroke="#252837" stroke-width="1"/>
 
-  <!-- ── Row 1: full tier (≥150 cols) ── -->
-  <!-- At 11px monospace, ~6.6px/char. Row has ~120 chars = ~792px. Starts at x=16. -->
-  <text x="16" y="62" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve">
-    <tspan fill="#61afef">Sonnet 4.6</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#6272a4">my-project</tspan><tspan fill="#3d4466"> │ ⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">████</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇ thinking</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">$1.24</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#56b6c2"> 28%</tspan><tspan fill="#3d4466"> ↺ 2:30pm</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">7d </tspan><tspan fill="#e5a450">████</tspan><tspan fill="#2a2d45">░░</tspan><tspan fill="#56b6c2"> 61%</tspan>
+  <!-- Tier gutter labels -->
+  <text text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="#566078">
+    <tspan x="66" y="78">full</tspan>
+    <tspan x="66" y="136">wide</tspan>
+    <tspan x="66" y="194">split</tspan>
+    <tspan x="66" y="252">narrow</tspan>
   </text>
 
-  <!-- ── Row 2: wide tier (100–149 cols) ── -->
-  <text x="16" y="108" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve">
-    <tspan fill="#61afef">Sonnet 4.6</tspan><tspan fill="#3d4466"> │ ⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">████</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇ thinking</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">$1.24</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#56b6c2"> 28%</tspan><tspan fill="#3d4466"> ↺ 2:30pm</tspan>
-  </text>
+  <!-- Each tier shows the same session at a different terminal width. Content starts at x=76. -->
 
-  <!-- ── Row 3: split tier (76–99 cols) ── -->
-  <text x="16" y="154" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve">
-    <tspan fill="#61afef">Sonnet 4.6</tspan><tspan fill="#3d4466"> │ ⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">███</tspan><tspan fill="#2a2d45">░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░</tspan><tspan fill="#56b6c2"> 28%</tspan>
-  </text>
+  <!-- ── full (≥150 cols) ── -->
+  <text x="76" y="64" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#e5c07b">Opus 4.8</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#61afef">◕ high</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇ thinking</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">$1.24</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#56b6c2"> 28%</tspan><tspan fill="#3d4466"> ↺ 2:30pm</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">7d </tspan><tspan fill="#ffb055">████</tspan><tspan fill="#2a2d45">░░</tspan><tspan fill="#56b6c2"> 61%</tspan><tspan fill="#3d4466"> ↺ jun 8</tspan></text>
+  <text x="76" y="86" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#6272a4">home</tspan><tspan fill="#3d4466"> │ ⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan><tspan fill="#3d4466"> │ ≡ </tspan><tspan fill="#6272a4" text-decoration="underline">e93557c2-326c-4cb7-9127-dbd8e66b9acd.jsonl</tspan></text>
+
+  <!-- ── wide (100–149 cols) ── -->
+  <text x="76" y="122" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#e5c07b">Opus 4.8</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#61afef">◕ high</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇ thinking</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">$1.24</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">██</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#56b6c2"> 28%</tspan><tspan fill="#3d4466"> ↺ 2:30pm</tspan></text>
+  <text x="76" y="144" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#6272a4">home</tspan><tspan fill="#3d4466"> │ ⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan><tspan fill="#3d4466"> │ ≡ </tspan><tspan fill="#6272a4" text-decoration="underline">e93557c2-326c-4cb7-9127-dbd8e66b9acd.jsonl</tspan></text>
+
+  <!-- ── split (76–99 cols) ── -->
+  <text x="76" y="180" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#e5c07b">Opus 4.8</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">█</tspan><tspan fill="#2a2d45">░░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#61afef">◕</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">◇</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#3d4466">5h </tspan><tspan fill="#50c878">█</tspan><tspan fill="#2a2d45">░░░</tspan><tspan fill="#56b6c2"> 28%</tspan></text>
+  <text x="76" y="202" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#3d4466">⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan><tspan fill="#50c878"> ↑2</tspan></text>
+
+  <!-- ── narrow (<76 cols) ── -->
+  <text x="76" y="238" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#e5c07b">Opus</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#50c878">█</tspan><tspan fill="#2a2d45">░░░</tspan><tspan fill="#ffb055"> 45k</tspan><tspan fill="#3d4466">/</tspan><tspan fill="#9aa5ce">200k</tspan><tspan fill="#3d4466"> 22%</tspan><tspan fill="#3d4466"> │ </tspan><tspan fill="#61afef">◕</tspan></text>
+  <text x="76" y="260" font-family="'SF Mono','Cascadia Code','Fira Code','Menlo',monospace" font-size="11" xml:space="preserve"><tspan fill="#3d4466">⎇ </tspan><tspan fill="#c678dd">feature/auth</tspan><tspan fill="#50c878"> ✔</tspan></text>
 
 </svg>
