@@ -33,7 +33,7 @@ nas  │  ⎇ feature/auth ✔ ↑2  │  ≡ e93557c2-…-6kQbB.jsonl
 
 | Section | What it means |
 |---------|--------------|
-| `nas` | Current working directory |
+| `home` | Current working directory |
 | `⎇ feature/auth` | Git branch in the current working directory |
 | `✔` / `✗` | Clean or dirty working tree |
 | `↑2 ↓1` | Commits ahead / behind upstream (hidden when zero) |
