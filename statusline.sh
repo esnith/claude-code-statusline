@@ -14,9 +14,8 @@ SHOW_EFFORT=true        # reasoning-effort indicator (from .effort.level)
 SHOW_THINKING=true      # extended thinking indicator
 SHOW_RATE_LIMITS=true   # 5h / 7d rate limit bars
 SHOW_CWD=true           # current directory (line 2)
-SHOW_TRANSCRIPT=true    # transcript filename (line 2, full/wide only)
+SHOW_TRANSCRIPT=true    # transcript filename as a clickable link (line 2, full/wide only)
 BRANCH_MAX_LEN=28       # truncate branch names longer than this
-TRANSCRIPT_MAX_LEN=24   # truncate transcript filename longer than this
 GIT_CACHE_SECS=10       # seconds to cache git status (git diff is slow on large repos)
 TOKEN_BAR_WIDTH=8       # width of token progress bar
 
@@ -475,11 +474,12 @@ if $SHOW_GIT && [ -n "$cwd" ]; then
     fi
 fi
 
-# Transcript filename — full/wide only
+# Transcript — full/wide only. Rendered as an OSC 8 hyperlink (file://) so the
+# filename is clickable (opens the transcript) and shown in full, not truncated.
 if $SHOW_TRANSCRIPT && { [ "$width_tier" = "full" ] || [ "$width_tier" = "wide" ]; } && [ -n "$transcript_path" ]; then
     t_base="${transcript_path##*/}"
-    t_disp=$(truncate_str "$t_base" "$TRANSCRIPT_MAX_LEN")
-    append_line2 "${dim}≡ ${t_disp}${reset}"
+    t_link="\033]8;;file://${transcript_path}\007${t_base}\033]8;;\007"
+    append_line2 "${dim}≡ ${t_link}${reset}"
 fi
 
 # ===== Print (two lines; second line only if it has content) =====
